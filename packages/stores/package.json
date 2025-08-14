@@ -1,0 +1,17 @@
+{
+  "name": "stores",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "export": "./index.ts",
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.14.0",
+    "prisma": "^6.14.0"
+  }
+}
