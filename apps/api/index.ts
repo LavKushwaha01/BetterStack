@@ -1,14 +1,16 @@
-import { promises } from "dns";
+
 import  express  from "express";
 import { prisma } from "stores/index.ts";
 import { AuthInput } from "./types";
 import jwt from "jsonwebtoken"
-import { error } from "console";
+import { authMiddleware } from "./middleware";
+
 
 const app = express();
+
 app.use(express.json());
 
-app.post("/website", async (req, res) => {
+app.post("/website", authMiddleware, async (req, res) => {
 
   if(!req.body.url) {
     return res.status(401).json({
@@ -18,10 +20,8 @@ app.post("/website", async (req, res) => {
 const website = await prisma.website.create({
     data: {
       url: req.body.url,
-      user: {
-        // Replace 'userId' with the actual user ID from the request (e.g., req.body.userId or from auth)
-        connect: { id: req.body.userId }
-      }
+      time_added: new Date(),
+      user_id: req.userId!
     }
   
 })
@@ -33,8 +33,33 @@ res.json({
 
 });
 
-app.get("/status/:websiteId", (req, res) => {
+app.get("/status/:websiteId", authMiddleware, async (req, res) => {
+const website = await prisma.website.findFirst({
+  where:{
+     user_id: req.userId!,
+     id: req.params.websiteId,
+  },
+   include: {
+            ticks: {
+                orderBy: [{
+                    createdAt: 'desc',
+                }],
+                take: 1
+            }
+        }
+})
+ if (!website) {
+        res.status(409).json({
+            message: "Not found"
+        })
+        return;
+    }
 
+    res.json({
+        url: website.url,
+        id: website.id,
+        user_id: website.user_id
+    })
   
 }); 
 
@@ -69,7 +94,7 @@ res.json({
 
 
 
-app.post("/user/signup", async (req, res) => {
+app.post("/user/signup",  async (req, res) => {
   const data = AuthInput.safeParse(req.body);
   if(!data.success){
     console.log(data.error.toString());
@@ -94,6 +119,6 @@ res.json({
 
 })
 
-app.listen(3000, () => {
-  console.log("ButterStack API is running on port 3000");
+app.listen(3001, () => {
+  console.log("ButterStack API is running on port 3001");
 });
